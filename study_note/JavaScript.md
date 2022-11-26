@@ -66,7 +66,7 @@ console.log(f.constructor===Fn);    // false
 console.log(f.constructor===Array); // true
 ```
 
-4. **Object.prototype,toString.call()：**使用Object对象的原型方法 toString 来判断数据类型；
+4. **Object.prototype.toString.call()：**使用Object对象的原型方法 toString 来判断数据类型；
 
 ```javascript
 var a = Object.prototype.toString;
@@ -295,7 +295,187 @@ NaN 是一个特殊值，它和自身不相等，是唯一一个非自反的值�
 
 ### 其他值到布尔类型的值的转换规则
 
-- 
+以下这些是假值：
+
+• undefined
+
+• null
+
+• false
+
+• +0、-0 和 NaN
+
+• ""
+
+假值的布尔强制类型转换结果为 false。从逻辑上说，假值列表以外的都应该是真值。
+
+## || 和 && 操作符的返回值
+
+|| 和 && 会首先对第一个操作数执行条件判断，如果不是布尔值即先强制转换为布尔类型，然后再执行条件判断。
+
+- 对于||来说，如果条件判断结果为true就返回第一个操作数的值，如果我诶false就返回第二个操作数的值（会返回为true操作数的值）；
+- 对于&&来说，如果条件判断结果为true就返回第二个操作数的值，如果为false就返回第一个操作数的值。
+
+## Object.is() 与比较操作符“==”、“===”的区别
+
+- 使用（==）进行相等判断时，如果两边的类型不一致，则会先进行强制类型转换后再进行比较；
+- 使用（===）进行相等判断时，如果两边的类型不一致，不会进行强制类型转换，直接返回 false；
+- Object.is在一般情况下和（===）的判断相同。它另外处理了一特殊情况，比如-0和+0不再相等，两个NaN相等
+
+## 什么是 JavaScript 中的包装类型
+
+在JavaScript中，基本类型没有属性和方法，但是为了便于操作基本类型的值，在调用基本类型的属性或方法时 JavaScript 会在后台隐式地将基本类型的值转换为对象，如：
+
+```js
+const a = "abc";
+a.length; // 3
+a.toUpperCase(); // "ABC"
+```
+
+在访问`'abc'.length`时，JavaScript 将`'abc'`在后台转换成`String('abc')`，然后再访问其`length`属性。
+
+JavaScript可以使用`Object`函数显式地将基本类型转为包装类型：
+
+```js
+var a = 'abc'
+Object(a)
+// String {'abc'}
+```
+
+可以使用`valueOf`方法将包装类型倒转为基本类型：
+
+```js
+var a = 'abc'
+var b = Object(a)
+b.valueOf
+// 'abc'
+```
+
+## ？JavaScript 中如何进行隐式类型转换
+
+**ToPrimitive**：JavaScript中每个值隐含自带`ToPrimitive`方法，用来将值（无论是基本类型还是对象）转换为基本类型值。如果是基本类型则直接返回值本身；如果值为对象时：
+
+```js
+/**
+* @obj 需要转换的对象
+* @type 期望的结果类型,为 number 或者 string
+*/
+ToPrimitive(obj,type)
+```
+
+（1）当 type 为`number`时规则如下：
+
+- 调用`obj`的`valueOf`方法，如果为原始值，则返回，否则下一步；
+- 调用`obj`的`toString`方法，后续同上；
+- 抛出`TypeError` 异常。
+
+（2）当 type 为`string`时规则如下：
+
+- 调用`obj`的`toString`方法，如果为原始值，则返回，否则下一步；
+- 调用`obj`的`valueOf`方法，后续同上；
+- 抛出`TypeError` 异常。
+
+在默认情况下：
+
+- 对象为`Date`对象，则`type`默认为`string`
+- 其他情况下，`type`默认为`number`
+
+## 如何判断一个对象是空对象
+
+- 使用JSON自带的 .stringfy 方法判断：
+
+```js
+if(Json.stringify(Obj) == '{}' ){
+    console.log('空对象');
+}
+```
+
+- 使用ES6新增的方法 Object.keys() 判断：
+
+```js
+if(Object.keys(Obj).length < 0){
+    console.log('空对象');
+}
+```
+
+# es6
+
+## let、const、var的区别
+
+- 块级作用域：let 和 const 具有块级作用域，var 不存在块级作用域；
+- 给全局添加属性：var声明的变量为全局变量，并且会将该变量添加为全局对象的属性。let 和 const 不会；
+- 变量提升：var 存在变量提升，let 和 const 不存在变量提升；
+- 暂时性死区：在使用 let 和 const 命令声明变量之前，该变量都是不可用的。在语法上被称为暂时性死区，var声明的变量不存在暂时性死区；
+- 重复声明：var允许重复声明，let和const不能
+- 初始值设置：var和let可以不设置初始值，但是const必须有初始值
+- 指针指向：const不能修改指针指向
+
+# 原型&原型链
+
+## 原型
+
+### 概念
+
+每个实例对象都有一个私有属性（称之为`__proto__`）指向它的构造函数的原型对象（prototype）。该原型对象也有一个自己的原型对象（`__proto__`），层层向上直到一个对象的原型对象为`null`。根据定义，`null`没有原型，并作为这个原型链的最后一个环节。
+
+①所有引用类型都有一个`__proto__`(隐式原型)属性，属性值是一个普通的对象
+②所有函数都有一个prototype(原型)属性，属性值是一个普通的对象
+③所有引用类型的`__proto__`属性指向它构造函数的prototype
+
+## 原型链
+
+### 概念
+
+当访问一个对象的某个属性时，会先在这个对象本身属性上查找，如果没有找到，则会去它的__proto__隐式原型上查找，即它的构造函数的prototype，如果还没有找到就会再在构造函数的prototype的`__proto__`中查找，这样一层一层向上查找就会形成一个链式结构，我们称为原型链。
+
+### 默认原型
+
+默认情况下，所有的引用类型都继承自Object，即Object.prototype位于原型继承链的顶端。
+
+```javascript
+function SuperType(){
+    this.property = true;
+}
+SuperType.prototype.getSuperValue = function(){
+    return this.property;
+};
+function SubType(){
+    this.subproperty = false;
+}
+SubType.prototype = new SuperType();
+SubType.prototype.getSubValue = function(){
+     return this.subproperty;
+}
+let instance = new SubType();
+console.log(instance.getSuperValue()); // true
+```
+
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1894f00b9df34fffb058d9813f06e3e8~tplv-k3u1fbpfcp-zoom-in-crop-mark:3024:0:0:0.awebp" alt="img" style="zoom:50%;" />
+
+此时如果调用instance.toString()方法，则实际上的调用的Object.prototype上的方法。
+
+### 原型与继承关系
+
+#### instanceof
+
+使用instanceof操作符可以确定原型与实例之间的关系。
+
+```javascript
+console.log(instance instanceof Object); // true
+console.log(instance instanceof SuperType); // true
+console.log(instance instanceof SubType); // true
+复制代码
+```
+
+#### isPrototypeof()
+
+使用isPrototypeof()方法，只要原型链中包含此原型，就会返回true。
+
+```javascript
+console.log(Object.prototype.isPrototypeOf(instance)); // true
+console.log(SuperType.prototype.isPrototypeOf(instance)); // true
+console.log(SubType.prototype.isPrototypeOf(instance)); // true
+```
 
 # 作用域&作用域链
 
@@ -356,7 +536,16 @@ foo();
 bar();
 ```
 
+## 全局作用域和函数作用域
 
+- 全局作用域
+- 函数作用域
+
+## 块级作用域
+
+- 在ES6之前JavaScript采用的是 函数作用域 和 词法作用域 ，ES6引入了块级作用域；
+- 任何一对{}花括号中的语句集都属于一个块，在块中使用let和const声明的变量，外部总是访问不到，这种作用域的规则叫块级作用域；
+- 通过var声明的变量或者非严格模式下创建的函数声明没有块级作用域；
 
 ## 作用域链
 
@@ -509,13 +698,77 @@ https://juejin.cn/post/6844904145372053511#heading-5
 
 ## 解释
 
-执行上下文是用来跟踪记录代码运行时环境的抽象概念。每一次代码运行至少会形成一个执行上下文。代码都是在执行上下文中运行的。
+当JS引擎解析到可执行代码片段（通常是函数调用阶段）的时候会做一些执行前的准备工作，这个准备工作就叫做**执行上下文** ，或者叫**执行环境**。
 
 执行上下文分为：
 
 - 全局执行上下文：当运行代码是处于全局作用域内，则会生成全局执行上下文，这也是程序中 最基础 的执行上下文；
 - 函数执行上下文：当**调用函数的时候**，会生成函数执行上下文；
 - eval执行上下文：eval函数（String转为js的方法）执行时，会生成专属上下文。
+
+## es3和es5执行上下文对比
+
+https://juejin.cn/post/6844904158957404167
+
+**执行上下文生命周期：**
+
+- 创建阶段
+- 执行阶段
+- 销毁阶段
+
+### es3的执行过程
+
+#### 创建阶段
+
+- 用当前函数的参数列表（arguments）初始化一个“变量对象”并将当前执行上下文与之关联，函数代码块中**声明的变量和函数**作为属性添加到这个变量对象上。这一阶段会进行变量和函数的**初始化声明**，变量统一定义为`undefined`需要等到赋值时才会有确值，而函数则会直接定义（即变量声明提升）。
+- 构建作用域链
+- 确定`this`的值
+
+#### 执行阶段
+
+JS代码开始逐条执行，JS引擎开始对定义的变量进行赋值、顺着作用域链访问变量、如果内部有函数调用就创建一个新的执行上下文压入执行栈并把控制权交出
+
+#### 销毁阶段
+
+一般情况（闭包除外）当函数执行完成之后当前执行上下文会被弹出执行上下文栈并且销毁，控制权被重新交给执行栈的上一层执行上下文。
+
+存在闭包：当闭包的父包裹函数执行完成后，父函数本身执行环境的作用域链会被销毁，但由于闭包的作用域链仍然在引用父函数的变量对象，因此会导致父函数的变量对象会一直贮存在内存，无法销毁，除非闭包的引用被销毁，闭包不再引用父函数的变量对象，这块内存才能被释放掉。
+
+过度使用闭包会造成内存泄露的问题。
+
+### es5的执行过程
+
+对比es3中执行上下文的部分概念作出调整：去除了es3中变量对象和活动对象，以**词法环境组件**（ **`LexicalEnvironment component`）**和**变量环境组件（ **`VariableEnvironment component`）替代。
+
+```ini
+ExecutionContext = {
+  ThisBinding = <this value>,
+  LexicalEnvironment = { ... },
+  VariableEnvironment = { ... },
+}
+```
+
+#### 执行过程总结
+
+1. 程序启动，全局上下文被创建
+   1. 创建全局上下文的**词法环境**
+      1. 创建**对象环境记录器**，用来定义出现在**全局上下文**中的变量和函数的关系（负责处理let和const声明的变量）
+      2. 创建**外部环境引用**，值为null
+   2. 创建全局上下文的**变量环境**
+      1. 创建**对象环境记录器**，它持有**变量声明语句**在执行上下文中创建的绑定关系（负责处理var定义的变量，初始值为undefined造成声明提升）
+      2. 创建**外部环境引用**，值为null
+   3. 确定`this`指向为全局对象（浏览器的话就是window）
+2. 函数被调用，函数上下文被创建
+   1. 创建函数上下文的**词法环境**
+      1. 创建  **声明式环境记录器** ，存储变量、函数和参数，它包含了一个传递给函数的 **`arguments`** 对象（此对象存储索引和参数的映射）和传递给函数的参数的 **length**。（负责处理 `let` 和 `const` 定义的变量）
+      2. 创建 **外部环境引用**，值为全局对象，或者为父级词法环境（作用域）
+   2. 创建函数上下文的**变量环境**
+      1. 创建  **声明式环境记录器** ，存储变量、函数和参数，它包含了一个传递给函数的 **`arguments`** 对象（此对象存储索引和参数的映射）和传递给函数的参数的 **length**。（负责处理 `var` 定义的变量，初始值为 `undefined` 造成声明提升）
+      2. 创建 **外部环境引用**，值为全局对象，或者为父级词法环境（作用域）
+   3. 确定 `this` 值
+
+3. 进入函数执行上下文的执行阶段：
+   1. 在上下文中运行/解释函数代码，并在代码逐行执行时分配变量值。
 
 ## 执行栈
 
@@ -535,7 +788,7 @@ https://juejin.cn/post/6844904145372053511#heading-5
 </script>
 ```
 
-1. JS程序开始运行，创建一个全局执行上下文```GlobalContext```，其中会初始化一些全局对象或函数，如代码中的consloe\undefined\isNaN。将全局执行上下文压入执行栈，通常JS引擎都有一个指针```running```指向栈顶元素；
+1. JS程序开始运行，创建一个全局执行上下文```GlobalContext```，其中会初始化一些全局对象或函数，如代码中的console\undefined\isNaN。将全局执行上下文压入执行栈，通常JS引擎都有一个指针```running```指向栈顶元素；
 
 2. JS引擎会将全局范围内声明的函数foo初始化在全局上下文中。运行到console就在running指向的上下文中的词法环境中找到全局对象console并调用log函数；
 
@@ -574,8 +827,6 @@ var foo = function () {
 
 foo(); // foo2
 ```
-
-
 
 ```javascript
 function foo() {
@@ -643,9 +894,25 @@ ECStack.push(<f> functionContext);
 ECStack.pop();
 ```
 
-## 执行上下文的创建
+#### 题目三
 
-执行上下文创建会做两件事：
+```javascript
+var a= 1;
+foo(1)
+function foo(a) {
+    if (a === 5) { return }
+    console.log('before',a)
+    foo(a + 1)
+    console.log( 'after',a)
+}
+console.log('end', a)
+```
+
+
+
+## 词法环境&变量环境
+
+执行上下文的创建过程做两件事：
 
 1. 创建词法环境```LexicalEnvironment```
 2. 创建变量环境```VariableEnvironment```
@@ -663,11 +930,13 @@ ECStack.pop();
 
 变量环境本质上仍是词法环境，但它只存储`var`声明的变量，这样在初始化变量时可以赋值为`undefined`。
 
-# let/const暂时性死区
+# let/const暂时性死区TDZ
 
 ES6规定：如果区块中存在let和const命令，这个区块会对这些命令所声明的变量从一开始形成 封闭作用域。
 
-暂时性死区的本质：当我们进入当前作用域时，let\const声明的变量已经存在，但是不能被访问，直到代码运行到声明处才可以。
+### 理解
+
+暂时性死区的本质：在进入到当前作用域的进行实例化的时候，用let或者const声明的变量会先创建，但是还未进行词法绑定，因此不能被访问，访问的话会抛出错误。在 作用域中创建变量 和 变量可以被访问 之间的一段时间被称为“暂时性死区”。
 
 图三红线以上为危险区，即“暂时性死区”。
 
@@ -686,6 +955,18 @@ var me = 'icon';
 
 
 
+### 还有别的会造成引发暂时性死区的现象吗
+
+typeof：使用let或const声明的变量在声明之前使用typeof则会报错，对比一个变量没有被声明的情况，typeof反而不会报错
+
+```js
+typeof x; // ReferenceError
+let x;
+typeof undeclared_variable // "undefined"
+```
+
+import 关键字引入公共模块，使用 new class 创建类的方式，也会引发暂时性死区，究其原因还是因为变量的声明先于使用。
+
 # 变量提升
 
 ## 解释
@@ -698,11 +979,7 @@ var me = 'icon';
 
 ## 如何避免变量提升
 
-使用```let```和```const```关键字，尽量使用```const```，避免使用```var``
-
-
-
-
+使用```let```和```const```关键字，尽量使用```const```，避免使用``var``
 
 # 函数提升
 
@@ -735,8 +1012,6 @@ var fun = function(){
 }
 //Uncaught TypeError: fun is not a function
 ```
-
-
 
 ## 面试题
 
@@ -774,7 +1049,7 @@ fn(); //undefined
   function foo() {
     console.log(v1);
     var v1 = 200;
-    console.log(v1);
+    console.log(v1);                                
   }
   foo();
   console.log(v1);//undefined undefined 200 100
@@ -788,7 +1063,7 @@ MDN：闭包是指那些能够访问自由变量的函数；
 
 自由变量：是指在函数中使用的，但既不是函数参数也不是函数的局部变量的变量；
 
-自己的理解：闭包就是函数内部的函数，被返回了出去并在外部调用。
+自己的理解：闭包就是函数内部的函数，*被返回了出去并在外部调用*。（有问题）
 
 ## 题目
 
@@ -836,5 +1111,181 @@ data[1]();
 data[2]();//0 1 2
 ```
 
-# 垃圾回收
+# 事件循环
 
+https://zhuanlan.zhihu.com/p/33058983
+
+https://segmentfault.com/a/1190000022805523
+
+https://segmentfault.com/a/1190000014940904
+
+## **为什么会有事件循环？**
+
+JavaScript从诞生之日起就是一门**单线程**的**非阻塞**的脚本语言。
+
+非阻塞意味着当代码需要进行一项**异步任务**（无法立刻返回结果，需要花一定时间才能返回的任务）的时候，主线程会挂起这个任务，然后在异步任务返回结果的时候再根据一定规则去执行相应的回调。
+
+js非阻塞就是通过**event loop（事件循环）**实现的。
+
+PS：event loop由宿主环境（浏览器、node...）提供，而不是JS引擎。
+
+## **事件循环的过程**
+
+由于JS是单线程运行的在代码执行时，通过将不同函数的执行上下文压入执行栈中来保证代码的有序执行。在遇到异步事件时，js引擎不会等待其返回结果，而是会将这个事件挂起，继续执行执行栈中的其他任务。当一个异步事件返回结果后，js会将这个事件加入到与当前执行栈不同的队列，即**事件队列**。事件队列又被分为**宏任务队列**和**微任务队列**
+
+被放入事件队列后不会立即执行回调，而是等到当前执行栈中所有任务都执行完毕，主线程处于闲置状态时去微任务队列中查找是否有事件存在，如果存在则会依次执行队列中事件对应的回调，直到微任务队列为空，然后再去宏任务队列把对应的回调加入到当前执行栈中执行回调。
+
+## 微任务&宏任务
+
+- 微任务包括： promise 的回调、node 中的 process.nextTick 、对 Dom 变化监听的 MutationObserver、Object.observe(已废弃)。
+- 宏任务包括： script 脚本的执行、setTimeout ，setInterval ，setImmediate 一类的定时事件，还有如 I/O 操作、UI 渲染等。
+
+宏任务与微任务的区别就是：微任务优先于宏任务执行。
+
+## script的整体代码为什么是宏任务？
+
+通过以下两个例子对比，发现script同setTimeout的执行顺序一样，所以是宏任务：
+
+```javascript
+<!-- 脚本 1 -->
+<script>
+	// 同步
+	console.log('start1')
+	// 异步宏
+	setTimeout(() => console.log('timer1'), 0)
+	new Promise((resolve, reject) => {
+		// 同步
+		console.log('p1')
+		resolve()
+	}).then(() => {
+		// 异步微
+		console.log('then1')
+	})
+	// 同步
+	console.log('end1')
+</script>
+
+<!-- 脚本 2 -->
+<script>
+	// 同步
+	console.log('start2')
+	// 异步宏
+	setTimeout(() => console.log('timer2'), 0)
+	new Promise((resolve, reject) => {
+		// 同步
+		console.log('p2')
+		resolve()
+	}).then(() => {
+		// 异步微
+		console.log('then2')
+	})
+	// 同步
+	console.log('end2')
+</script>
+```
+
+```javascript
+setTimeout(() => {
+	// 同步
+	console.log('start1')
+	// 异步宏
+	setTimeout(() => console.log('timer1'), 0)
+	new Promise((resolve, reject) => {
+		// 同步
+		console.log('p1')
+		resolve()
+	}).then(() => {
+		// 异步微
+		console.log('then1')
+	})
+	// 同步
+	console.log('end1')
+}, 0)
+
+setTimeout(() => {
+	// 同步
+	console.log('start2')
+	// 异步宏
+	setTimeout(() => console.log('timer2'), 0)
+	new Promise((resolve, reject) => {
+		// 同步
+		console.log('p2')
+		resolve()
+	}).then(() => {
+		// 异步微
+		console.log('then2')
+	})
+	// 同步
+	console.log('end2')
+}, 0)
+```
+
+
+
+<img src="C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221123195804626.png" alt="image-20221123195804626" style="zoom:50%;" />
+
+# new 操作符具体干了什么
+
+```javascript
+var Func=function(){};
+var func=new Func();
+```
+
+new 经历了4个阶段：
+
+1. 创建一个空对象
+
+   ```javascript
+   var obj = new Object();
+   ```
+
+2. 设置原型链，将对象的原型设置为函数的prototype对象
+
+   ```javascript
+   obj.__proto__ = Func.prototype;
+   ```
+
+3. 让函数的this指向这个对象，执行构造函数的代码
+
+   ```javascript
+   var result = Func.call(obj); //让Func中的this指向obj，并执行Func的函数体
+   ```
+
+4. 判断函数的返回值类型： 
+
+   如果是值类型，返回创建的对象；如果是引用类型，则返回这个引用类型的对象。
+
+   ```javascript
+   if (typeof(result) == "object"){
+     func=result;
+   }
+   else{
+       func=obj;;
+   }
+   ```
+
+   **辅助理解：**
+
+   构造函数返回的是一个对象的话，则实例化对象等于返回的普通对象。
+
+   ```javascript
+   function Func(){
+       this.a = 1;
+       return {
+           a: 2,
+           b: 3
+       }
+   }
+   var func = new Func();
+   func.a; //2
+   ```
+
+# JS继承
+
+![image-20221122141150049](C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221122141150049.png)
+
+## 原型链继承
+
+
+
+# 垃-39圾回收
