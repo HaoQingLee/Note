@@ -1,5 +1,7 @@
 # CSS基础
 
+https://segmentfault.com/a/1190000013325778
+
 ## CSS选择器及其优先级
 
 - 基本选择器
@@ -887,6 +889,18 @@ CSS 工程化是为了解决以下问题：
 - auto：子元素内容大于父元素时会出现滚动条；
 - visible：溢出的内容出现在父元素之外；
 - hidden：溢出隐藏；
+
+## CSS书写顺序
+
+衡量程序员的能力，除了要看实现业务需求的能力，还要看平时书写代码的规范（专业性）
+不同的CSS书写顺序会影响浏览器的渲染性能，推荐前端工程师使用专业的书写顺序习惯
+
+| 顺序 | 类别          | 属性                                                  |
+| ---- | ------------- | ----------------------------------------------------- |
+| 1    | 布局类型      | display、position、float、clear、visibility、overflow |
+| 2    | 盒子模型+背景 | width、height、margin、padding、border、background    |
+| 3    | 文本内容属性  | color、font、text-decoration、text-align、line-height |
+| 4    | 点缀属性      | cursor、border-radius、text-shadow                    |
 
 # 页面布局
 

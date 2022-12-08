@@ -1,15 +1,5 @@
 
 
-什么是作用域和作用域链？
-
-静态作用域和动态作用域的区别？
-
-闭包解决了什么问题？
-
-闭包把变量保存在了哪里？闭包的流程？
-
-闭包的使用场景？防抖、节流
-
 # 数据类型
 
 ## JS的数据类型有哪些
@@ -160,9 +150,9 @@ console.log(n1 + n2)  // 0.30000000000000004
 
 `toFixed(num)` 方法可把 Number 四舍五入为指定小数位数的数字。那为什么会出现这样的结果呢？
 
-计算机是通过二进制的方式存储数据的，所以计算机计算0.1+0.2的时候，实际上是计算的两个数的二进制的和。0.1的二进制是`0.0001100110011001100...`（1100循环），0.2的二进制是：`0.00110011001100...`（1100循环），这两个数的二进制都是无限循环的数。那JavaScript是如何处理无限循环的二进制小数呢？
+**计算机是通过二进制的方式存储数据的**，所以计算机计算0.1+0.2的时候，实际上是计算的两个数的二进制的和。0.1的二进制是`0.0001100110011001100...`（1100循环），0.2的二进制是：`0.00110011001100...`（1100循环），**这两个数的二进制都是无限循环**的数。那JavaScript是如何处理无限循环的二进制小数呢？
 
-一般我们认为数字包括整数和小数，但是在 JavaScript 中只有一种数字类型：Number，它的实现遵循IEEE 754标准，使用64位固定长度来表示，也就是标准的double双精度浮点数。在二进制科学表示法中，双精度浮点数的小数部分最多只能保留52位，再加上前面的1，其实就是保留53位有效数字，剩余的需要舍去，遵从“0舍1入”的原则。
+一般我们认为数字包括整数和小数，但是在 **JavaScript 中只有一种数字类型：Number**，它的实现遵循IEEE 754标准，使用64位固定长度来表示，也就是标准的**double双精度浮点数**。在二进制科学表示法中，双精度浮点数的小数部分最多只能保留52位，再加上前面的1，其实就是保留53位有效数字，剩余的需要舍去，遵从“0舍1入”的原则。
 
 根据这个原则，0.1和0.2的二进制数相加，再转化为十进制数就是：`0.30000000000000004`。
 
@@ -313,7 +303,7 @@ NaN 是一个特殊值，它和自身不相等，是唯一一个非自反的值�
 
 || 和 && 会首先对第一个操作数执行条件判断，如果不是布尔值即先强制转换为布尔类型，然后再执行条件判断。
 
-- 对于||来说，如果条件判断结果为true就返回第一个操作数的值，如果我诶false就返回第二个操作数的值（会返回为true操作数的值）；
+- 对于||来说，如果条件判断结果为true就返回第一个操作数的值，如果为false就返回第二个操作数的值（会返回为true操作数的值）；
 - 对于&&来说，如果条件判断结果为true就返回第二个操作数的值，如果为false就返回第一个操作数的值。
 
 ## Object.is() 与比较操作符“==”、“===”的区别
@@ -375,10 +365,12 @@ ToPrimitive(obj,type)
 - 调用`obj`的`valueOf`方法，后续同上；
 - 抛出`TypeError` 异常。
 
-在默认情况下：
+可以看出两者的主要区别在于调用`toString`和`valueOf`的先后顺序。在默认情况下：
 
 - 对象为`Date`对象，则`type`默认为`string`
 - 其他情况下，`type`默认为`number`
+
+而 JavaScript 中的隐式类型转换主要发生在`+、-、*、/`以及`==、>、<`这些运算符之间。而这些运算符只能操作基本类型值，所以在进行这些运算前的第一步就是将两边的值用`ToPrimitive`转换成基本类型，再进行操作。
 
 ## 如何判断一个对象是空对象
 
@@ -398,7 +390,204 @@ if(Object.keys(Obj).length < 0){
 }
 ```
 
-# es6
+# ES6
+
+## Generator
+
+形式上：
+
+- function 关键字与函数名之间有一个星号
+- 函数体内部使用 yield 表达式，定义不同的内部状态
+
+```javascript
+function* helloWorldGenerator() {
+  yield 'hello';
+  yield 'world';
+  return 'ending';
+}
+
+var hw = helloWorldGenerator();
+```
+
+在调用Generator函数之后并不执行，返回的也不是函数内部的运行结果，而是一个执行内部状态的指针对象，即遍历器对象（Iterator Object）。
+
+Generator 函数分段执行，yield表达式是暂停执行的标记，调用遍历器对象的next方法，可以恢复执行。
+
+```javascript
+hw.next()
+// { value: 'hello', done: false }
+
+hw.next()
+// { value: 'world', done: false }
+
+hw.next()
+// { value: 'ending', done: true }
+
+hw.next()
+// { value: undefined, done: true }
+```
+
+调用 Generator 函数，返回一个遍历器对象，代表 Generator 函数的内部指针。以后，每次调用遍历器对象的next方法，就会返回一个有着value和done两个属性的对象。value属性表示当前的内部状态的值，是yield表达式后面那个表达式的值；done属性是一个布尔值，表示是否遍历结束。
+
+### yield用法
+
+yield表达式是 暂停 标志。
+
+1. 遇到yield表达式会暂停执行后面的操作，并将紧跟在yield后面的表达式的值作为返回的对象的value属性值；
+2. 下一次调用next方法时再继续往下执行，直到遇到下一个yield表达式；
+3. 如果没有再遇到新的yield表达式就一直运行到函数结束，直到return语句为止，并将return语句后面的表达式的值作为返回的对象的value属性值；
+4. 如果该函数没有return语句，则返回的对象的value属性值为undefined。
+
+### next方法
+
+next方法可以带一个参数，参数表示上一个yield表达式的返回值。
+
+```javascript
+function* foo(x) {
+  var y = 2 * (yield (x + 1));
+  var z = yield (y / 3);
+  return (x + y + z);
+}
+
+var a = foo(5);
+a.next() // Object{value:6, done:false}
+a.next() // Object{value:NaN, done:false}
+a.next() // Object{value:NaN, done:true}
+
+var b = foo(5);
+b.next() // { value:6, done:false }
+b.next(12) // { value:8, done:false }
+b.next(13) // { value:42, done:true }
+```
+
+### next()、throw()、return()共同点
+
+它们的作用都是让Generator函数恢复执行，并使用不同的语句替换yield表达式。
+
+- next()是将yield表达式替换成一个值；
+- throw()是将yield表达式替换成一个throw语句；
+- return()是将yield表达式替换成一个return语句。
+
+### for...of循环
+
+for...of循环可以自动遍历Generator函数运行时生成的Iterator对象，此时不需要再调用next方法。
+
+```javascript
+function* foo() {
+  yield 1;
+  yield 2;
+  yield 3;
+  yield 4;
+  yield 5;
+  return 6;
+}
+
+for (let v of foo()) {
+  console.log(v);
+}
+// 1 2 3 4 5
+```
+
+### yield* 表达式
+
+yield* 表达式用来解决在一个Generator函数里面执行另一个Generator函数。
+
+yield* 后面的 Generator 函数（没有return语句时），等同于在 Generator 函数内部部署一个 for...of 循环。
+
+```javascript
+function* inner() {
+  yield 'hello!';
+}
+ 
+function* outer1() {
+  yield 'open';
+  yield inner();
+  yield 'close';
+}
+
+var gen = outer1()
+gen.next().value // "open"
+gen.next().value // 返回一个遍历器对象
+gen.next().value // "close"
+
+function* outer2() {
+  yield 'open'
+  yield* inner()
+  yield 'close'
+}
+
+var gen = outer2()
+gen.next().value // "open"
+gen.next().value // "hello!"
+gen.next().value // "close"
+```
+
+### 作为对象属性的Generator函数
+
+如果一个对象的属性是Generator函数，可以简写成：
+
+```javascript
+let obj = {
+  * myGeneratorMethod() {
+    ...
+  }
+}
+```
+
+### this
+
+Generator 函数g返回的遍历器obj是g的实例，并且继承了g.prototype。
+
+g返回的总是遍历器对象，而不是this对象，obj对象拿不到this对象上的属性。
+
+Generator函数不能跟new命令一起用，会报错。
+
+```javascript
+function* g() {
+  this.a = 11;
+}
+
+g.prototype.hello = function () {
+  return 'hi!';
+};
+
+let obj = g();
+
+obj instanceof g // true
+obj.hello() // 'hi!'
+obj.a // undefined
+```
+
+### 改造成构造函数
+
+```javascript
+function* 
+```
+
+### 实现状态机
+
+```javascript
+var ticking = true;
+var clock = function() {
+  if (ticking)
+    console.log('Tick!');
+  else
+    console.log('Tock!');
+  ticking = !ticking;
+}
+var clock = function* () {
+  while (true) {
+    console.log('Tick!');
+    yield;
+    console.log('Tock!');
+    yield;
+  }
+};
+```
+
+Generator实现对比上面es5的实现来说，少了用来保存状态的外部变量ticking，这样更简洁更安全、更符合函数式编程的思想，在写法上更优雅。
+
+Generator之所以能不用外部变量保存状态，是因为它本身就包含了一个状态信息，即目前是否处于暂停态。
 
 ## let、const、var的区别
 
@@ -409,6 +598,121 @@ if(Object.keys(Obj).length < 0){
 - 重复声明：var允许重复声明，let和const不能
 - 初始值设置：var和let可以不设置初始值，但是const必须有初始值
 - 指针指向：const不能修改指针指向
+
+## 普通函数和箭头函数的区别
+
+- 箭头函数比普通函数更简洁
+- 箭头函数没有自己的this
+- 箭头函数继承来的this指向不会改变，call()、apply()、bind()等方法不能改变箭头函数中的this指向
+- 箭头函数不能作为构造函数使用
+- 箭头函数没有自己的arguments对象
+- 箭头函数没有prototype
+- 箭头函数不能用作Generator函数，不能使用yeild关键字
+
+## 提取高度嵌套的对象里的指定属性
+
+```javascript
+const school = {
+   classes: {
+      stu: {
+         name: 'Bob',
+         age: 24,
+      }
+   }
+}
+```
+
+- 逐层解构：
+
+  ```javascript
+  const { classes } = school
+  const { stu } = classes
+  const { name } = stu
+  name // 'Bob'
+  ```
+
+- 更标准的做法：
+
+  ```javascript
+  const { classes: { stu: { name } }} = school
+         
+  console.log(name)  // 'Bob'
+  ```
+
+# Map、WeakMap、Set、WeakSet
+
+## Map
+
+1. 支持的所有数据类型做为键
+2. 本质上是键值对的集合，类似集合
+3. 两个NaN也是重复的
+4. NaN和undefined都可以被存
+
+## Set
+
+1. 类似数组，值不重复
+2. 可存储任何类型
+3. 值不会进行类型转换，5和“5”是不同的
+4. 两个NaN也是重复的
+5. NaN和undefined都可以被存
+
+## WeakMap
+
+WeakMap 对象是一组键值对的集合，其中的键是**弱引用对象**，而值可以是任意
+
+注意，**WeakMap 弱引用的只是键名，而不是键值。键值依然是正常引用**。
+
+WeakMap 中，每个键对自己所引用对象的引用都是弱引用，如果引用的对象被回收之后，该键会失效 **WeakMap 的 key 是不可枚举的**。
+
+方法：
+
+1. has(key)：判断是否有 key 关联对象。
+2. get(key)：返回key关联对象（没有则返回 undefined）。
+3. set(key)：设置一组key关联对象。
+4. delete(key)：移除 key 的关联对象。
+
+## WeakSet
+
+WeakSet 对象允许你将弱引用对象储存在一个集合中
+
+方法：
+
+1. add(value): 添加某个值，返回 Set数据结构本身
+2. delete(value): 删除某个值，返回Boolean，删除成功与否
+3. has(value): 返回一个Boolean，是成员与否
+
+## WeakMap与Map的区别
+
+1. 键名是弱引用
+2. 只接受对象作为键名（null除外）
+3. 不能遍历
+
+## Map和Object的区别
+
+1. Object的key 必须是简单数据类型（整数、字符串、symbol），map的key可以是任何类型
+2. Map元素插入顺序是FIFO，object没有
+3. Map继承自Object
+4. Map在存储大量元素的时候性能表现更好
+5. 写入删除密集的情况应该使用 Map
+
+## WeakSet和Set的区别
+
+1. WeakSet只能存储对象引用
+2. WeakSet存储弱引用，会被垃圾回收机制回收，保存dom节点不错
+3. 不想数据管理用WeakSet
+4. 没有size属性，不能遍历
+
+## Map和Set的区别
+
+1. Set以`[value, value]`的形式储存元素,Map以`[key,value]`的形式储存元素
+2. map的值不作为键，键和值是分开的
+
+# JS脚本延迟加载的方式
+
+- 添加defer、async属性异步加载
+- 动态创建DOM，对文档的加载事件进行监听，当文档加载完成后再动态的创建script便签来引入JS脚本
+- 使用setTimeOut延迟方法，设置一个定时器来延迟加载js文件
+- 让JS最后加载，放到文档底部
 
 # 原型&原型链
 
@@ -426,7 +730,7 @@ if(Object.keys(Obj).length < 0){
 
 ### 概念
 
-当访问一个对象的某个属性时，会先在这个对象本身属性上查找，如果没有找到，则会去它的__proto__隐式原型上查找，即它的构造函数的prototype，如果还没有找到就会再在构造函数的prototype的`__proto__`中查找，这样一层一层向上查找就会形成一个链式结构，我们称为原型链。
+当访问一个对象的某个属性时，会先在这个对象本身属性上查找，如果没有找到，则会去它的__proto__隐式原型上查找，即它的构造函数的prototype，如果还没有找到就会再在构造函数的prototype的`__proto__`中查找，这样一层一层向上查找就会形成一个链式结构，我们称为原型链。 
 
 ### 默认原型
 
@@ -792,9 +1096,11 @@ ExecutionContext = {
 
 2. JS引擎会将全局范围内声明的函数foo初始化在全局上下文中。运行到console就在running指向的上下文中的词法环境中找到全局对象console并调用log函数；
 
-3. 运行到```foo()```的时候，识别为函数调用，创建一个新的函数执行上下文```FooContext```并入栈。将```FooContext```内词法环境的outer引用指向全局执行上下文的此法环境，移动```running```指针，指向这个新的上下文；
+3. 运行到```foo()```的时候，识别为函数调用，创建一个新的函数执行上下文```FooContext```并入栈。将```FooContext```内词法环境的outer引用指向全局执行上下文的此法环境，移动```running```指针，指向
 
-4. 完成```FooContext```创建后继续进入```FooContext```内部执行代码，运行到```bar()```时，新建一个函数执行上下文```BarContext```，此时```BarContext```内词法环境的outer引用指向```FooContext```的词法环境。移动```running```指针，指向这个新的上下文；
+4. 这个新的上下文；
+
+5. 完成```FooContext```创建后继续进入```FooContext```内部执行代码，运行到```bar()```时，新建一个函数执行上下文```BarContext```，此时```BarContext```内词法环境的outer引用指向```FooContext```的词法环境。移动```running```指针，指向这个新的上下文；
 
    <img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/be33e4b00e7a490d925de9241fb5e2e5~tplv-k3u1fbpfcp-zoom-in-crop-mark:4536:0:0:0.awebp" alt="img" style="zoom: 50%;" />
 
@@ -802,9 +1108,9 @@ ExecutionContext = {
 
    
 
-5. 运行```bar```函数由于内有outer引用实现层层递进，因此在```bar```函数内仍可以获取到console对象并调用log；
+6. 运行```bar```函数由于内有outer引用实现层层递进，因此在```bar```函数内仍可以获取到console对象并调用log；
 
-6. 完成函数调用，依次将上下文出栈，直至全局上下文出栈，程序运行结束；
+7. 完成函数调用，依次将上下文出栈，直至全局上下文出栈，程序运行结束；
 
 <img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8ff380f05e414d8eb4199337976c976b~tplv-k3u1fbpfcp-zoom-in-crop-mark:4536:0:0:0.awebp" alt="img" style="zoom: 33%;" />
 
@@ -957,7 +1263,7 @@ var me = 'icon';
 
 ### 还有别的会造成引发暂时性死区的现象吗
 
-typeof：使用let或const声明的变量在声明之前使用typeof则会报错，对比一个变量没有被声明的情况，typeof反而不会报错
+**typeof：**使用let或const声明的变量在声明之前使用typeof则会报错，对比一个变量没有被声明的情况，typeof反而不会报错
 
 ```js
 typeof x; // ReferenceError
@@ -976,6 +1282,43 @@ import 关键字引入公共模块，使用 new class 创建类的方式，也�
 浏览器解析脚本阶段即完成初始化的步骤，遇到```var```变量时会先初始化为```undefined```，而不是报错；
 
 给变量提升下一个定义：浏览器在遇到JS执行环境的初始化时，引起的变量提前定义；
+
+## 变量提升导致的问题
+
+会导致内层变量覆盖外层变量：
+
+```javascript
+var tmp = new Date();
+ 
+function f() {
+  console.log(tmp);
+  if (false) {
+    var tmp = 'hello world';
+  }
+}
+ 
+f();//undefined
+```
+
+执行顺序：
+
+```javascript
+var tmp;//变量提升
+ 
+function f;//函数提升，写法可能不规范
+ 
+tmp = new Date();
+ 
+function f() {
+var tmp;//声明但未赋值为undefined
+console.log(tmp);//输出undefined
+  if (false) {
+tmp = 'hello world';
+  }
+}
+ 
+f(); 
+```
 
 ## 如何避免变量提升
 
@@ -1063,8 +1406,6 @@ MDN：闭包是指那些能够访问自由变量的函数；
 
 自由变量：是指在函数中使用的，但既不是函数参数也不是函数的局部变量的变量；
 
-自己的理解：闭包就是函数内部的函数，*被返回了出去并在外部调用*。（有问题）
-
 ## 题目
 
 ```javascript
@@ -1111,6 +1452,305 @@ data[1]();
 data[2]();//0 1 2
 ```
 
+# 异步编程
+
+http://www.ruanyifeng.com/blog/2012/12/asynchronous%EF%BC%BFjavascript.html
+
+https://juejin.cn/post/6844904064614924302
+
+## 异步编程的实现方式
+
+### 回调函数
+
+用回调函数实现异步操作的优点是简单、容易理解和部署，缺点是不利于代码的阅读和维护，各个部分之间高度耦合，流程会很混乱，并且每个任务只能指定一个回调函数。
+
+f1() 和 f2()， f2()需要等待f1的执行结果：
+
+```javascript
+　　function f1(callback){
+
+　　　　setTimeout(function () {
+
+　　　　　　// f1的任务代码
+
+　　　　　　callback();
+
+　　　　}, 1000);
+
+　　}
+　　f1(f2);
+```
+
+#### 缺点
+
+- 嵌套函数存在耦合性，一旦有所改动，就会牵一发而动全身
+- 嵌套函数一多，就很难处理错误
+- 不能使用try catch捕获错误，不能直接return
+
+```javascript
+ajax(url, () => {
+    // 处理逻辑
+    ajax(url1, () => {
+        // 处理逻辑
+        ajax(url2, () => {
+            // 处理逻辑
+        })
+    })
+})
+```
+
+### 事件监听、发布订阅模式
+
+#### 用jQuery实现事件监听
+
+```javascript
+$("body").on("done", fn2)
+
+function fn1() {
+  setTimeout(function() {
+    $("body").trigger("done")
+  }, 2000)
+}
+
+function fn2() {
+  console.log("fn2执行了")
+}
+fn1()
+```
+
+#### **发布订阅模式（观察者模式）**
+
+定义了对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都将得到通知。
+
+**使用class简单实现发布订阅模式:**
+
+```javascript
+// class实现发布订阅模式
+class Emitter{
+    constructor(){
+        this._listener = []
+    }
+    // 订阅、监听事件
+    on(type, fn){
+        this._listener[type] 
+        ? this._listener[type].push(fn) 
+            : (this._listener[type] = [fn])
+    }
+    // 发布、触发事件
+    trigger(type, ...rest){
+        if (!this._listener[type]) return
+        this._listener[type].forEach(callback=>callback(...rest))
+    }
+}
+```
+
+```javascript
+const emitter = new Emitter();
+emitter.on('done', function(arg1, arg2) {
+    console.log(arg1, arg2);
+})
+emitter.on('done', function(arg1, arg2) {
+    console.log(arg2, arg1);
+})
+function fn1() {
+    setTimeout(()=>{
+        emitter.trigger('done','异步参数1','异步参数2')
+    },1000)
+}
+fn1()
+```
+
+#### 优缺点
+
+**优点：**发布订阅模式实现的事件监听，可以绑定多个事件，每个事件也可以指定多个回调函数，比较符合模块化思想，同时我们自写监听器的时候可以做很多优化，从而更好的监控程序运行。
+
+**缺点：**整个程序变成了事件驱动，流程上或多或少会有点影响，每次还需要注册事件监听再进行触发有点麻烦，代码不太优雅。
+
+### Promise
+
+Promise 对象是CommonJS提出的一种规范，目的是为异步编程提供统一接口。它的思想是，
+
+每一个异步任务返回一个Promise对象，该对象有一个then方法，允许指定回调函数。
+
+```javascript
+　　f1().then(f2);
+```
+
+#### 优缺点
+
+**优点：**
+
+- promise用同步的方式写异步代码。避免了层层嵌套的回调函数；
+- promise对象提供了统一的接口，使得控制异步操作更加容易；
+- 链式操作，可以在then中继续写promise对象并返回，然后继续调用then来进行回调操作；
+
+**缺点：**
+
+- promise对象一旦创建就会立即执行，无法中途取消；
+- 不设置回调函数的话promise内部会抛出错误，不会流到外部
+- 当处于pending状态的时候，无法得知处于哪一阶段；
+- 链式语法不太优雅
+
+### Generator
+
+Generator是协程在ES6的实现，最大的特点就是可以交出函数的执行权。
+
+#### 优缺点
+
+**优点：**
+
+- 优雅的流程控制方式，让函数可中断执行，在某些特殊需求里很实用
+
+**缺点：**
+
+- Generator函数的执行必须靠执行器，所以才有了 co 函数库，但co模块约定，yield命令后面只能是 Thunk 函数或 Promise 对象，只针对异步处理来说，还是不太方便
+
+### Async/Await
+
+ES2017标准引入了async函数，使得异步操作更加方便。
+
+Async/Await的出现被很多人认为是JS异步操作的最终且最优雅的解决方案。
+
+它是Generator的语法糖，async 函数就是将 Generator 函数的星号（*）替换成 async，将 yield 替换成 await，仅此而已。
+
+await只能出现在async函数中。
+
+#### Async
+
+- async函数返回的是一个promise对象。
+
+- 如果在async函数中直接return一个直接量，async则会把这个直接量通过`Promise.resolve()`封装成Promise对象返回。
+
+  ```javascript
+  async function test() {
+    return "this is async"
+  }
+  const res = test()
+  console.log(res)
+  // Promise {<fulfilled>: "this is async"}
+  ```
+
+  ```javascript
+  async function ts(){
+      console.log(222);
+  }
+  console.log(ts())
+  // Promise {<fulfilled>: undefined}
+  ```
+
+#### await在等什么
+
+- await后面不是Promise对象，直接执行
+- await后面是Promise对象会阻塞后面的代码，Promise对象resolve后得到值作为await表达式的运算结果
+- await只能在async中使用
+
+#### 优缺点
+
+**优点：**
+
+- 语义清楚
+- 适用性更广，async函数的await命令后可以跟Promise对象和原始数据类型的值（这时等同于同步操作）
+
+**缺点：**
+
+- 滥用await可能会导致性能问题，可能之后的异步操作不依赖于前者，但仍需要等待前者完成，会导致代码失去并发性
+
+## 并行与并发的区别
+
+- 并发是**宏观概念**，假设分别有任务A和任务B，在一段时间内通过任务间的切换完成了这两个任务，这种情况可以称之为并发；
+- 并行是**微观概念**，假设CPU中有两个核心那么就可以同时完成任务A和任务B。同时完成多个任务的情况称之为并行。
+
+## 定时器执行不可靠问题
+
+### 不可靠原因
+
+- 当前任务执行时间过久
+- 延迟执行时间有最大值
+  - `setTimeout` 的第二个参数设置为 `0` （未设置、小于 `0`、大于 `2147483647` 时都默认为 `0`）的时候，意味着马上执行，或者尽快执行。
+- 最小延时>=4ms（嵌套使用定时器）
+  - 如果定时器嵌套 `5` 次以上并且延迟时间小于 `4ms`，则会把延迟时间设置为 `4ms`。
+- 未被激活的tabs的定时最小延迟>=1000ms
+  - 浏览器为了优化后台tab的加载损耗（以及降低耗电量），在未被激活的tab中定时器的最小延时限制为1s（1000ms）。
+
+### setTimeout 修正
+
+```javascript
+let period = 60 * 1000 * 60 * 2
+let startTime = new Date().getTime()
+let count = 0
+let end = new Date().getTime() + period
+let interval = 1000
+let currentInterval = interval
+function loop() {
+  count++
+  // 代码执行所消耗的时间
+  let offset = new Date().getTime() - (startTime + count * interval);
+  let diff = end - new Date().getTime()
+  let h = Math.floor(diff / (60 * 1000 * 60))
+  let hdiff = diff % (60 * 1000 * 60)
+  let m = Math.floor(hdiff / (60 * 1000))
+  let mdiff = hdiff % (60 * 1000)
+  let s = mdiff / (1000)
+  let sCeil = Math.ceil(s)
+  let sFloor = Math.floor(s)
+  // 得到下一次循环所消耗的时间
+  currentInterval = interval - offset 
+  console.log('时：'+h, '分：'+m, '毫秒：'+s, '秒向上取整：'+sCeil, '代码执行时间：'+offset, '下次循环间隔'+currentInterval) 
+  setTimeout(loop, currentInterval)
+}
+setTimeout(loop, currentInterval)
+```
+
+### requestAnimationFrame 实现定时器
+
+> **`window.requestAnimationFrame()`** 告诉浏览器——你希望执行一个动画，并且要求浏览器在下次重绘之前调用指定的回调函数更新动画。该方法需要传入一个回调函数作为参数，该回调函数会在浏览器下一次重绘之前执行，理想状态下回调函数执行次数通常是每秒60次（也就是我们所说的60fsp），也就是每16.7ms 执行一次，但是并不一定保证为 16.7 ms。
+
+不适用于间隔很小（小于16.7ms）的定时器修正。
+
+```javascript
+const t = Date.now()
+function mySetTimeout (cb, delay) {
+  let startTime = Date.now()
+  loop()
+  function loop () {
+    if (Date.now() - startTime >= delay) {
+      cb();
+      return;
+    }
+    requestAnimationFrame(loop)
+  }
+}
+mySetTimeout(()=>console.log('mySetTimeout' ,Date.now()-t),2000) //2005
+setTimeout(()=>console.log('SetTimeout' ,Date.now()-t),2000) // 2002
+```
+
+### web worker实现定时器
+
+web worker的作用就是为JavaScript创造多线程环境，允许主线程创建web worker线程，将一些任务分配给后者运行。
+
+```javascript
+// index.js
+let count = 0;
+//耗时任务
+setInterval(function(){
+  let i = 0;
+  while(i++ < 100000000);
+}, 0);
+
+// worker 
+let worker = new Worker('./worker.js')
+```
+
+```javascript
+// worker.js
+let startTime = new Date().getTime();
+let count = 0;
+setInterval(function(){
+    count++;
+    console.log(count + ' --- ' + (new Date().getTime() - (startTime + count * 1000)));
+}, 1000);
+```
+
 # 事件循环
 
 https://zhuanlan.zhihu.com/p/33058983
@@ -1118,6 +1758,8 @@ https://zhuanlan.zhihu.com/p/33058983
 https://segmentfault.com/a/1190000022805523
 
 https://segmentfault.com/a/1190000014940904
+
+*https://juejin.cn/post/6844904050543034376
 
 ## **为什么会有事件循环？**
 
@@ -1280,12 +1922,474 @@ new 经历了4个阶段：
    func.a; //2
    ```
 
-# JS继承
+# 对象创建的方式
 
-![image-20221122141150049](C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221122141150049.png)
+
+
+# 八种继承方案
+
+继承的本质就是**重写原型对象，代之以一个新类型的实例**。
 
 ## 原型链继承
 
+每个构造函数都有一个原型对象，原型对象都包含一个指向构造函数的指针（constructor），而实例都包含一个原型对象的指针（`__proto__`）。
+
+#### 实现
+
+```javascript
+function Person(name){
+    this.foods = ['苹果', '西瓜', '橙子']
+    this.name = name
+}
+Person.prototype.getName = function(){
+    return this.name;
+}
+function Student(name) {
+    this.name = name;
+}
+Student.prototype = new Person();
+// 实例对象stu1、stu2指向父级的实例对象
+var stu1 = new Student('小红');
+var stu2 = new Student('小蓝');
+console.log(stu1.getName());
+console.log(stu2.getName());
+```
+
+#### 缺点
+
+多个实例对引用类型的操作会被篡改。
+
+```javascript
+stu1.foods.push('哈密瓜');
+console.log(stu1.foods,stu2.foods);// ['苹果', '西瓜', '橙子', '哈密瓜']  ['苹果', '西瓜', '橙子', '哈密瓜']
+```
+
+#### 图解
+
+![image-20210718212045105](https://gitee.com/serious_coding/note/raw/master/img/20210718212045.png)
+
+## 借用构造函数继承
+
+#### 实现
+
+利用Person.**call**
+
+```javascript
+function Person(name){
+    this.foods = ['苹果', '西瓜', '橙子']
+    this.name = name
+}
+function Student(name){
+    Person.call(this,name);
+}
+var stu1 = new Student('小红');
+var stu2 = new Student('小蓝');
+stu1.foods.push('榴莲');
+stu2.foods.push('香蕉');
+console.log(stu1.foods, stu2.foods);
+```
+
+#### 缺点
+
+- 只能继承父类的实例属性和方法，不能继承原型属性和方法
+- 无法实现复用，每个子类都有父类实例函数的副本，影响性能
+
+```javascript
+Person.prototype.eat = function() {
+    console.log('吃饭......');
+}
+
+stu1.eat(); // stu1.eat is not a function
+```
+
+#### 图解
+
+![image-20210718211833081](https://gitee.com/serious_coding/note/raw/master/img/20210718211833.png)
+
+## 组合继承
+
+组合上述两种方法就是组合继承。用原型链实现对原型属性和方法的继承，借用构造函数实现实例属性的继承。
+
+#### 实现
+
+```javascript
+function Person(name){
+    this.name = name;
+    this.foods = ['苹果', '西瓜', '橙子'];
+}
+Person.prototype.getName = function(){
+    return this.name;
+}
+function Student(name, school){
+    // 继承实例属性
+    Person.call(this,name); // 第二次调用Person()
+    this.school = school;
+}
+// 继承原型上的方法和属性，第一次调用Person()
+Student.prototype = new Person();
+Student.prototype.getSchool = function(){
+    console.log(this.school);
+}
+var stu1 = new Student('小红', '幼儿园');
+var stu2 = new Student('小蓝', '高中');
+console.log(stu1.name, stu1.school); // 小红 幼儿园
+console.log(stu2.name, stu2.school); // 小蓝 高中
+
+stu1.foods.push('橙子');
+console.log(stu1.foods); // ["苹果", "芒果", "西瓜", "橙子"]
+console.log(stu2.foods); // ["苹果", "芒果", "西瓜"]
+
+stu1.getName(); // 小红
+
+```
+
+#### 缺点
+
+- 父类构造器始终会被调用两次，有两组相同的属性：一组在实例上，一组在student的原型上
+  - 第一次调用Person()，给Student.prototype写入两个属性：name、foods；
+  - 第二次调用Person()，给Student的实例写入两个属性：name、foods；
+
+## 原型式继承
+
+利用一个空对象作为中介，将某个对象直接赋值给空对象构造函数的原型。
+
+#### 实现
+
+```javascript
+function object(obj){
+  function F(){}
+  F.prototype = obj;
+  return new F();
+}
+
+var person = {
+    name: 'dsada',
+    foods: ['苹果', '西瓜', '橙子']
+}
+var anotherPerson = object(person);
+anotherPerson.foods.push('芒果');
+anotherPerson.name = 'sdjdja';
+var yetPerson = object(person);
+yetPerson.foods.push('香蕉');
+console.log(person.foods); // ['苹果', '西瓜', '橙子', '芒果', '香蕉']
+```
+
+object()对传入其中的对象执行了一次浅复制，将构造函数F的原型直接指向传入的对象。
+
+#### 缺点
+
+- 原型链继承多个实例的引用类型属性指向相同，存在篡改的可能
+- 无法传递参数
+
+## 寄生式继承
+
+核心：在原型式继承的基础上，增强对象，返回构造函数。
+
+函数的主要作用是为构造函数新增属性和方法，以增强函数。
+
+#### 实现
+
+```javascript
+function createAnother(original){
+    var clone = object(original); // 通过object()创建一个新对象
+    clone.sayHi = function(){
+        console.log('hi');
+    }
+    return clone;
+}
+var person = {
+    name: 'dsada',
+    foods: ['苹果', '西瓜', '橙子']
+}
+var anotherPerson = createAnother(person);
+anotherPerson.sayHi(); // hi
+```
+
+#### 缺点
+
+同原型式继承一样：
+
+- 原型链继承多个实例的引用类型属性指向相同，存在篡改的可能
+- 无法传递参数
+
+## 寄生组合式继承
+
+结合借用构造函数传递参数和寄生模式实现继承。
+
+#### 实现
+
+```javascript
+function inheritPrototype(subType, superType){
+    var prototype = Object.create(superType.prototype); // 创建对象，创建父类原型的一个副本
+    prototype.constructor = subType; // 增强对象，弥补因重写原型而失去的默认的constructor属性
+    subType.prototype = prototype; // 指定对象，将新创建的对象赋值给子类的原型
+}
+// 父类初始化
+function SuperType(name){
+    this.name = name;
+    this.foods = ['苹果', '西瓜', '橙子'];
+}
+SuperType.prototype.sayName = function(){
+    console.log(this.name);
+}
+// 借用构造函数传递增强子类实例属性（支持传参和避免篡改）
+function SubType(name, age) {
+    SuperType.call(this, name);
+    this.age = age;
+}
+inheritPrototype(SubType, SuperType);
+// 新增子类原型属性
+SubType.prototype.sayAge = function(){
+    alert(this.age);
+  }
+var s1 = new SubType('xyz',12);
+var s2 = new SubType('vbn',43);
+s1.foods.push('芒果');
+s2.foods.push('香蕉');
+```
 
 
-# 垃-39圾回收
+
+# 类数组对象与arguments
+
+## 类数组对象
+
+类数组对象：拥有一个length属性和若干索引属性的对象。
+
+```javascript
+var array = ['name', 'age', 'sex'];
+
+var arrayLike = {
+    0: 'name',
+    1: 'age',
+    2: 'sex',
+    length: 3
+}
+```
+
+类数组对象不可以使用数组的方法，使用会报错。
+
+**调用数组方法：**
+
+```javascript
+var arrayLike = {0: 'name', 1: 'age', 2: 'sex', length: 3 }
+
+Array.prototype.join.call(arrayLike, '&'); // name&age&sex
+
+Array.prototype.slice.call(arrayLike, 0); // ["name", "age", "sex"] 
+// slice可以做到类数组转数组
+
+Array.prototype.map.call(arrayLike, function(item){
+    return item.toUpperCase();
+}); 
+// ["NAME", "AGE", "SEX"]
+```
+
+**类数组转数组：**
+
+```javascript
+var arrayLike = {0: 'name', 1: 'age', 2: 'sex', length: 3 }
+// 1. slice
+Array.prototype.slice.call(arrayLike); // ["name", "age", "sex"] 
+// 2. splice
+Array.prototype.splice.call(arrayLike, 0); // ["name", "age", "sex"] 
+// 3. ES6 Array.from
+Array.from(arrayLike); // ["name", "age", "sex"] 
+// 4. apply
+Array.prototype.concat.apply([], arrayLike)
+```
+
+## Arguments 对象
+
+**`arguments`** 是一个对应于传递给函数的参数的类数组对象。Arguments对象只定义在函数体中，包括了函数的参数和其他属性，在函数体中，arguments 指代该函数的 Arguments 对象。
+
+```javascript
+function foo(name, age, sex) {
+    console.log(arguments);
+}
+
+foo('name', 'age', 'sex')
+```
+
+![image-20221129111455010](C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221129111455010.png)
+
+**length属性:**表述实参的长度；
+
+**callee属性：**通过它可以调用函数自身；
+
+```javascript
+var data = [];
+
+for (var i = 0; i < 3; i++) {
+    (data[i] = function () {
+       console.log(arguments.callee.i) 
+    }).i = i;
+}
+
+data[0]();
+data[1]();
+data[2]();
+// 0
+// 1
+// 2
+```
+
+### arguments 和对应参数的绑定
+
+非严格模式下：传入的参数，实参和 arguments 的值会共享；没有传入时，实参与arguments不会共享；
+
+严格模式下，实参和arguments不会共享。
+
+```javascript
+function foo(name, age, sex, hobbit) {
+
+    console.log(name, arguments[0]); // name name
+
+    // 改变形参
+    name = 'new name';
+
+    console.log(name, arguments[0]); // new name new name
+
+    // 改变arguments
+    arguments[1] = 'new age';
+
+    console.log(age, arguments[1]); // new age new age
+
+    // 测试未传入的是否会绑定
+    console.log(sex); // undefined
+
+    sex = 'new sex';
+
+    console.log(sex, arguments[2]); // new sex undefined
+
+    arguments[3] = 'new hobbit';
+
+    console.log(hobbit, arguments[3]); // undefined new hobbit
+
+}
+
+foo('name', 'age')
+```
+
+### 应用
+
+arguments 的应用有很多，jQuery的 extend 实现、函数柯里化、递归等场景看到arguments的身影。
+
+- 参数不定长
+- 函数柯里化
+- 递归调用
+- 函数重载...
+
+# 垃圾回收
+
+## 什么是垃圾回收
+
+`GC`即`Garbage Collection`，用来描述 查找和删除那些不再被其他对象引用的对象 处理过程。
+
+## 垃圾回收机制
+
+- JavaScript 具有自动垃圾回收机制，会定期对不再使用的变量、对象所占用的内存进行释放。
+- 浏览器通常使用的两种算法策略
+  - 标记清除算法
+  - 引用计数算法
+
+### 标记清除算法
+
+#### 策略
+
+标记清除（Mark-Sweep）是目前在`JavaScript引擎`里最常用的，大多数浏览器的JS引擎都在采用标记清除算法，只是各大浏览器厂商会对此算法进行优化加工，并且不同浏览器的JS引擎在运行垃圾回收的频率上有所差异。
+
+标记清除算法分为**标记**和**清除**两个阶段，标记阶段为所有活动对象上做标记，清除阶段会把没有标记（非活动对象）销毁。
+
+大致的标记清除算法过程：
+
+- 垃圾收集器在运行时会给内存中的所有变量都加上一个标记，假设内存中所有对象都是垃圾，全标记为0
+- 然后从各个根对象开始遍历，把不是垃圾的节点改成1
+- 清理所有标记是0的垃圾，销毁并回收它们所占用的内存空间
+- 最后把所有内存中的对象标记为0，等待下一轮垃圾回收
+
+#### 优点
+
+实现比较简单，就两种情况（被标记和不被标记），这使得一位二进制位（0和1）就可以为其标记。
+
+#### 缺点
+
+- 内存碎片化
+
+  在清除垃圾后，剩余的对象内存位置是不变的，会导致空闲内存空间是不连续的，出现了 内存碎片，由于剩余的空闲内存不是一整块，是由不同大小内存组成的内存列表，因此会牵扯出内存分配问题。
+
+- 分配速度慢
+
+  即使是用`First-fit`策略，其操作仍是一个O(n)的操作，最坏情况时每次都要遍历到最后，同时因为碎片化，大对象的分配效率会更慢。
+
+  有三种内存分配策略，考虑到分配的速度和效率 `First-fit` 是更为明智的选择：
+
+  - `First-fit`，找到大于等于 `size` 的块立即返回
+  - `Best-fit`，遍历整个空闲列表，返回大于等于 `size` 的最小分块
+  - `Worst-fit`，遍历整个空闲列表，找到最大的分块，然后切成两部分，一部分 `size` 大小，并将该部分返回
+
+<img src="C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221128104200340.png" alt="image-20221128104200340" style="zoom:67%;" />
+
+#### 补充
+
+**标记整理（Mark-Compact）算法** 在标记阶段和标记清除算法没什么不同，只是在标记结束后，标记整理算法会将活动对象（不需要清除的对象）向内存的一端移动，最后清理掉边界的内存。
+
+<img src="C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221128110736463.png" alt="image-20221128110736463" style="zoom:67%;" />
+
+### 引用计数算法
+
+#### 策略
+
+引用计数（Reference Counting）把对象是否不再需要 简化定义为 对象有没有其他对象引用到它，如果没有引用对象指向该对象（零引用），对象将被垃圾回收机制回收。
+
+它的策略是跟踪记录每个变量值被使用的次数：
+
+- 当声明了一个变量并且将一个引用类型赋值给该变量的时候这个值的引用次数就为1
+- 如果同一个值又被赋给另一个变量，那么引用次数加1
+- 如果该变量的值被其他的值覆盖，引用次数减1
+- 当这个值的引用次数变为 0 的时候，说明没有变量在使用，这个值没法被访问了，回收空间，垃圾回收器会在运行的时候清理掉引用次数为 0 的值占用的内存
+
+```javascript
+let a = new Object() 	// 此对象的引用计数为 1（a引用）
+let b = a 		// 此对象的引用计数是 2（a,b引用）
+a = null  		// 此对象的引用计数为 1（b引用）
+b = null 	 	// 此对象的引用计数为 0（无引用）
+...			// GC 回收此对象
+```
+
+#### 优点
+
+- 立即回收垃圾：引用计数在引用值为 0 时，也就是在变成垃圾的那一刻就会被回收，所以它可以立即回收垃圾。而标记清除算法需要每隔一段时间进行一次，那在应用程序（JS脚本）运行过程中线程就必须要暂停去执行一段时间的 `GC`。
+- 标记清除算法需要遍历堆里的活动以及非活动对象来清除，而引用计数则只需要在引用时计数就可以了
+
+#### 缺点
+
+- 引用计数需要一个计数器，而计数器需要占用很大的位置
+- 不知道被引用数量的上限，无法解决循环引用无法回收的问题
+
+## GC优化策略
+
+- **分代回收**
+
+  分代式机制把一些新、小、存活时间短的对象作为新生代，采用一小块内存频率较高的快速清理，而一些大、老、存活时间长的对象作为老生代，使其很少接受检查，新老生代的回收机制及频率是不同的，可以说此机制的出现很大程度提高了垃圾回收机制的效率
+
+- **增量GC**
+
+  增量就是将一次 `GC` 标记的过程，分成了很多小步，每执行完一小步就让应用逻辑执行一会儿，这样交替多次后完成一轮 `GC` 标记。
+
+  <img src="C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221128115349478.png" alt="image-20221128115349478" style="zoom:50%;" />
+
+
+
+## 减少垃圾回收
+
+虽然浏览器可以进行垃圾自动回收，但是当代码比较复杂的时候，垃圾回收所带来的代价比较大，应该尽量减少垃圾回收。
+
+- 对数组优化：在清空一个数组时，给其赋值为[]，将长度设置为0，以此来达到清空数组的目的；
+- 对`object`优化：对象尽量复用，对不再使用的对象，将其设置为null，尽快被回收；
+- 对函数优化：在循环中的函数表达式，如果可以复用，尽量放在函数的外面。
+
+https://juejin.cn/post/6981588276356317214
+
+# 内存泄露
+
