@@ -113,12 +113,14 @@ undefined 表示**未定义**，null 表示**空对象**。一般变量声明了
 
 ## instanceof 操作符的原理及实现
 
-`instanceof`运算符用于判断构造函数的 prototype 属性是否出现在对象的原型链中的任何位置。
+`instanceof`运算符用于判断构造函数的 prototype （原型对象）是否出现在对象的原型链中的任何位置。
 
 ```javascript
 // left：对象；right：构造函数
 function myInstanceof(left, right) {
+    // 获取对象的隐式原型
     let proto = Object.getPrototypeOf(left);
+    // 获取构造函数的原型对象
     let prototype = right.prototype;
     while (true) {
         if (!proto) {
@@ -409,7 +411,7 @@ function* helloWorldGenerator() {
 var hw = helloWorldGenerator();
 ```
 
-在调用Generator函数之后并不执行，返回的也不是函数内部的运行结果，而是一个执行内部状态的指针对象，即遍历器对象（Iterator Object）。
+在调用Generator函数之后并不执行，返回的也不是函数内部的运行结果，而是一个执行内部状态的指针对象，即**遍历器对象**（Iterator Object）。
 
 Generator 函数分段执行，yield表达式是暂停执行的标记，调用遍历器对象的next方法，可以恢复执行。
 
@@ -588,6 +590,274 @@ var clock = function* () {
 Generator实现对比上面es5的实现来说，少了用来保存状态的外部变量ticking，这样更简洁更安全、更符合函数式编程的思想，在写法上更优雅。
 
 Generator之所以能不用外部变量保存状态，是因为它本身就包含了一个状态信息，即目前是否处于暂停态。
+
+## Proxy & Reflect
+
+### Object.defineProperty()
+
+Object.defineProperty() 方法会直接在一个对象上定义一个新属性，或者修改一个对象的现有属性，并返回此对象。
+
+**语法：**
+
+```javascript
+Object.defineProperty(obj, prop, descriptor)
+```
+
+obj：要定义属性的对象；
+
+prop：要定义或修改的属性的名称或symbol；
+
+descriptor：要定义或修改的属性描述符；
+
+```javascript
+var o = {}; // 创建一个新对象
+
+// 在对象中添加一个属性与数据描述符的示例
+Object.defineProperty(o, "a", {
+  value : 37,
+  writable : true,
+  enumerable : true,
+  configurable : true
+});
+
+// 对象 o 拥有了属性 a，值为 37
+
+// 在对象中添加一个设置了存取描述符属性的示例
+var bValue = 38;
+Object.defineProperty(o, "b", {
+  // 使用了方法名称缩写（ES2015 特性）
+  // 下面两个缩写等价于：
+  // get : function() { return bValue; },
+  // set : function(newValue) { bValue = newValue; },
+  get() { return bValue; },
+  set(newValue) { bValue = newValue; },
+  enumerable : true,
+  configurable : true
+});
+
+o.b; // 38
+// 对象 o 拥有了属性 b，值为 38
+// 现在，除非重新定义 o.b，o.b 的值总是与 bValue 相同
+
+// 数据描述符和存取描述符不能混合使用
+Object.defineProperty(o, "conflict", {
+  value: 0x9f91102,
+  get() { return 0xdeadbeef; }
+});
+// 抛出错误 TypeError: value appears only in data descriptors, get appears only in accessor descriptors
+
+```
+
+### Proxy
+
+Proxy对象用于创建一个对象的代理，从而实现基本操作的拦截和自定义（如属性查找、赋值、枚举、函数调用等）。
+
+#### 语法
+
+```javascript
+const p = new Proxy(target, handler);
+```
+
+target：是用Proxy包装的被代理对象（可以是任何类型的对象，包括原生数组、函数、甚至是另一个代理）；
+
+handler：一个对象，声明了代理target的一些操作，其属性是当执行一个操作时定义代理的行为的函数。
+
+#### 方法
+
+##### Proxy.revocable()
+
+创建一个可撤销的Proxy对象，其结构为： `{"proxy": proxy, "revoke": revoke}`；
+
+- proxy：表示新生成的代理对象本身，和一般方式`new Proxy(target, handler)`创建的代理对象没什么不同，只是它可以被撤销掉；
+- revoke：撤销方法，直接调用不需要传参，就可以撤销掉和它一起生成的代理对象；
+
+```javascript
+var revocable = Proxy.revocable({}, {
+  get(target, name) {
+    return "[[" + name + "]]";
+  }
+});
+var proxy = revocable.proxy;
+proxy.foo;              // "[[foo]]"
+
+revocable.revoke();
+
+console.log(proxy.foo); // 抛出 TypeError
+proxy.foo = 1           // 还是 TypeError
+delete proxy.foo;       // 又是 TypeError
+typeof proxy            // "object"，因为 typeof 不属于可代理操作
+
+```
+
+#### handler对象的方法
+
+- handler.apply()
+- handler.construct()
+- handler.defineProperty()
+- handler.deleteProperty()
+- handler.get()
+- handler.getOwnPropertyDescriptor()
+- handler.getPrototypeOf()
+- handler.has()
+- handler.isExtensible()
+- handler.ownKeys()
+- handler.preventExtensions()
+- handler.set()
+- handler.setPrototypeOf()
+
+#### 示例
+
+##### 通过属性查找数组中的特定对象
+
+```javascript
+let products = new Proxy([
+  { name: 'Firefox'    , type: 'browser' },
+  { name: 'SeaMonkey'  , type: 'browser' },
+  { name: 'Thunderbird', type: 'mailer' }
+], {
+  get: function(obj, prop) {
+    // 默认行为是返回属性值，prop ?通常是一个整数
+    if (prop in obj) {
+      return obj[prop];
+    }
+
+    // 获取 products 的 number; 它是 products.length 的别名
+    if (prop === 'number') {
+      return obj.length;
+    }
+
+    let result, types = {};
+
+    for (let product of obj) {
+      if (product.name === prop) {
+        result = product;
+      }
+      if (types[product.type]) {
+        types[product.type].push(product);
+      } else {
+        types[product.type] = [product];
+      }
+    }
+
+    // 通过 name 获取 product
+    if (result) {
+      return result;
+    }
+
+    // 通过 type 获取 products
+    if (prop in types) {
+      return types[prop];
+    }
+
+    // 获取 product type
+    if (prop === 'types') {
+      return Object.keys(types);
+    }
+
+    return undefined;
+  }
+});
+
+console.log(products[0]); // { name: 'Firefox', type: 'browser' }
+console.log(products['Firefox']); // { name: 'Firefox', type: 'browser' }
+console.log(products['Chrome']); // undefined
+console.log(products.browser); // [{ name: 'Firefox', type: 'browser' }, { name: 'SeaMonkey', type: 'browser' }]
+console.log(products.types); // ['browser', 'mailer']
+console.log(products.number); // 3
+
+```
+
+### Reflect
+
+Reflect是一个内置的对象，它提供拦截JS操作的方法，这些方法与proxy handlers的方法相同。Reflect不是一个函数对象，因此是不可构造的。
+
+**设计目的：**
+
+1. 将Object对象的一些明显属于语言内部的方法（如Object.defineProperty）放到Reflect对象上。
+
+2. 修改某些`Object`方法的返回结果，让其变得更合理。
+
+3.  让`Object`操作都变成函数行为。
+
+4. `Reflect`对象的方法与`Proxy`对象的方法一一对应，只要是`Proxy`对象的方法，就能在`Reflect`对象上找到对应的方法。这就让Proxy对象可以方便地调用对应的Reflect方法，完成默认行为，作为修改行为的基础。也就是说，**不管Proxy怎么修改默认行为，总可以在Reflect上获取默认行为。**
+
+   ```javascript
+   var loggedObj = new Proxy(obj, {
+     get(target, name) {
+       console.log('get', target, name);
+       return Reflect.get(target, name);
+     },
+     deleteProperty(target, name) {
+       console.log('delete' + name);
+       return Reflect.deleteProperty(target, name);
+     },
+     has(target, name) {
+       console.log('has' + name);
+       return Reflect.has(target, name);
+     }
+   });
+   ```
+
+#### 静态方法
+
+- Reflect.apply()
+- Reflect.construct()
+- Reflect.defineProperty()
+- Reflect.deleteProperty()
+- Reflect.get(target, propertyKey, receiver)
+- Reflect.getOwnPropertyDescriptor()
+- Reflect.getPrototypeOf()
+- Reflect.has()
+- Reflect.isExtensible()
+- Reflect.ownKeys()
+- Reflect.preventExtensions()
+- Reflect.set(target, propertyKey, value, receiver)
+- Reflect.setPrototypeOf()
+
+#### 示例
+
+##### 检测一个对象是否存在特定属性
+
+```javascript
+const duck = {
+  name: 'Maurice',
+  color: 'white',
+  greeting: function() {
+    console.log(`Quaaaack! My name is ${this.name}`);
+  }
+}
+
+Reflect.has(duck, 'color');
+// true
+Reflect.has(duck, 'haircut');
+// false
+
+```
+
+### 为什么Proxy和Reflect要一起用
+
+Proxy和Reflect的方法都是一一对应的，**在Proxy里使用Reflect会提高语义化**。
+
+注意：考虑到this指向的问题，尽量把this放在代理对象`receiver`上，而不是放到原对象`target`上。
+
+```javascript
+const person = { name: '林三心', age: 22 }
+
+const proxyPerson = new Proxy(person, {
+    get(target, key, receiver) {
+        return target[key]
+    },
+    set(target, key, value, receiver) {
+        target[key] = value
+    }
+})
+
+console.log(proxyPerson.name) // 林三心
+
+proxyPerson.name = 'sunshine_lin'
+
+console.log(proxyPerson.name) // sunshine_lin
+```
 
 ## let、const、var的区别
 
@@ -1285,7 +1555,7 @@ import 关键字引入公共模块，使用 new class 创建类的方式，也�
 
 ## 变量提升导致的问题
 
-会导致内层变量覆盖外层变量：
+**会导致内层变量覆盖外层变量：**
 
 ```javascript
 var tmp = new Date();
@@ -1309,6 +1579,7 @@ function f;//函数提升，写法可能不规范
  
 tmp = new Date();
  
+0.
 function f() {
 var tmp;//声明但未赋值为undefined
 console.log(tmp);//输出undefined
@@ -1866,7 +2137,7 @@ setTimeout(() => {
 
 <img src="C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221123195804626.png" alt="image-20221123195804626" style="zoom:50%;" />
 
-# new 操作符具体干了什么
+# new 操作符实现流程
 
 ```javascript
 var Func=function(){};
@@ -1878,7 +2149,7 @@ new 经历了4个阶段：
 1. 创建一个空对象
 
    ```javascript
-   var obj = new Object();
+   var obj = {};
    ```
 
 2. 设置原型链，将对象的原型设置为函数的prototype对象
@@ -1902,7 +2173,7 @@ new 经历了4个阶段：
      func=result;
    }
    else{
-       func=obj;;
+       func=obj;
    }
    ```
 
@@ -1972,7 +2243,7 @@ console.log(stu1.foods,stu2.foods);// ['苹果', '西瓜', '橙子', '哈密瓜
 
 #### 实现
 
-利用Person.**call**
+利用.**call**
 
 ```javascript
 function Person(name){
@@ -2280,6 +2551,266 @@ arguments 的应用有很多，jQuery的 extend 实现、函数柯里化、递�
 - 递归调用
 - 函数重载...
 
+# 深拷贝和浅拷贝
+
+- 基本数据类型是直接在栈中保存它的值，拷贝的是值
+- 引用数据类型的值保存在堆空间，而保存引用类型的变量存在于栈空间，保存着引用类型值在堆空间的内存地址。
+
+拷贝引用类型的时候，会出现深拷贝和浅拷贝；
+
+## 浅拷贝
+
+浅拷贝是使用一个变量去拷贝一个引用类型在栈中的**内存地址**；
+
+```javascript
+let obj = { name: 'lhq' };
+let obj2 = obj;
+obj2.name = 'LHQ';
+console.log(obj.name); // { name: 'LHQ' }
+```
+
+### 使用场景
+
+#### `Object.assign()`
+
+`Object.assign()` 方法用于将所有可枚举属性的值从一个或多个源对象复制到目标对象。它将返回目标对象。
+
+```javascript
+let student = {
+    name: '李浩清',
+    school: {
+        name: '幼儿园',
+        level: 2
+    }
+};
+let p = Object.assign({}, student);
+
+student.name = 'change';
+student.school.name = '高中';
+console.log(student);
+// { name:'change', school: { name:'高中', level: 2 } }
+console.log(p);
+// { name:'李浩清', school: { name:'高中', level: 2 } }
+```
+
+#### 展开语法`Spread`...
+
+```javascript
+let student = {
+    name: '李浩清',
+    school: {
+        name: '幼儿园',
+        level: 2
+    }
+};
+let p = {...student};
+
+console.log(p);
+// { name:'李浩清', school: { name:'幼儿园', level: 2 } }
+student.name = 'change';
+student.school.name = '高中';
+console.log(student);
+// { name:'change', school: { name:'高中', level: 2 } }
+console.log(p);
+// { name:'李浩清', school: { name:'高中', level: 2 } }
+```
+
+#### `Array.prototype.slice()`
+
+`slice()`方法返回一个新的数组对象，这一对象是一个有begin和end决定的原数组的浅拷贝。原始数组不会被改变。
+
+```javascript
+let a = [0, "1", [2, 3]];
+let b = a.slice(1);
+console.log(b);
+// ["1", [2, 3]]
+
+a[1] = "99";
+a[2][0] = 4;
+console.log(a);
+// [0, "99", [4, 3]]
+
+console.log(b);
+//  ["1", [4, 3]]
+```
+
+#### Object.assign 和 扩展运算符 的区别
+
+首先两者都是浅拷贝，两者的区别是：
+
+- Object.assign()方法接收的第一个参数作为目标对象，后面的所有参数作为源对象。然后把所有的源对象合并到目标对象中。它会修改了一个对象，因此会触发 ES6 setter，扩展运算符不会触发。
+- 扩展操作符（…）使用它时，数组或对象中的每一个值都会被拷贝到一个新的数组或对象中。它不复制继承的属性或类的属性，但是它会复制ES6的 symbols 属性。
+
+## 深拷贝
+
+深拷贝是指在堆内存中开辟出一个空间，把原有的堆内存中保存的引用类型的值拷贝到新开辟的空间中。
+
+深拷贝相比于浅拷贝来说速度较慢且花销较大，拷贝前后的两个对象互不影响。
+
+```javascript
+let obj = { name: 'lhq' };
+let obj2 = JSON.parse(JSON.stringify(obj));
+obj2.name = 'LHQ';
+console.log(obj.name); // { name: 'lhq' }
+```
+
+### 实现深拷贝的方式
+
+#### 递归浅拷贝
+
+https://segmentfault.com/a/1190000016672263
+
+**封装的深拷贝函数：**
+
+没有考虑循环引用的问题~
+
+```javascript
+const copyObj = (obj={}) => {
+    let newObj = null;
+    if (typeof obj == 'object' && obj !== null) {
+        newObj = obj instanceof Array ? [] : {};
+        for (const i in obj) {
+            newObj[i] = copyObj(obj[i]);
+        }
+    } else {
+        newObj = obj;
+    }
+    return newObj;
+}
+```
+
+**测试：**
+
+```javascript
+let obj = {
+    numberParams:1,
+	functionParams:() => {
+		console.log('昨天基金全是绿的，只有我的眼睛是红的');
+	},
+	objParams:{
+		a:1,
+		b:2
+	}
+}
+const newObj = copyObj(obj);
+obj.numberParams = 100;
+console.log(newObj.numberParams);
+```
+
+#### 使用`JSON.parse(JSON.stringify(object))`
+
+##### 使用
+
+```javascript
+let a = [0, "1", [2, 3]];
+let b = JSON.parse(JSON.stringify( a.slice(1) ))
+console.log(b);
+// ["1", [2, 3]]
+
+a[1] = "99";
+a[2][0] = 4;
+console.log(a);
+// [0, "99", [4, 3]]
+
+console.log(b);
+//  ["1", [2, 3]]
+```
+
+##### 缺点
+
+1. 当对象中有时间类型的元素的时候，时间类型会变成字符串类型数据；
+
+   ```javascript
+   const obj = {
+       date:new Date()
+   }
+   typeof obj.date === 'object' //true
+   const objCopy = JSON.parse(JSON.stringify(obj));
+   typeof objCopy.date === string; //true
+   ```
+
+2. 当对象中有undefined类型或function类型的数据时，undefined和function会直接丢失；
+
+   ```javascript
+       const obj = {
+           undef: undefined,
+           fun: () => { console.log('叽里呱啦，阿巴阿巴') }
+       }
+       console.log(obj,"obj"); // {undef: undefined, fun: ƒ} 'obj'
+       const objCopy = JSON.parse(JSON.stringify(obj));
+       console.log(objCopy,"objCopy") // {} 'objCopy'
+   ```
+
+3. 当对象中有NaN、Infinity、-Infinity这三种值的时候，会变成null
+
+   ```javascript
+       const obj = {
+           nan:NaN,
+           infinityMax:1.7976931348623157E+10308,
+           infinityMin:-1.7976931348623157E+10308,
+       }
+       console.log(obj, "obj"); // {nan: NaN, infinityMax: Infinity, infinityMin: -Infinity} 'obj'
+       const objCopy = JSON.parse(JSON.stringify(obj));
+       console.log(objCopy,"objCopy") // {nan: null, infinityMax: null, infinityMin: null} 'objCopy'
+   ```
+
+4. 当对象循环引用的时候，会报错
+
+   ```javascript
+       const obj = {
+           objChild:null
+       }
+       obj.objChild = obj;
+       const objCopy = JSON.parse(JSON.stringify(obj));
+       console.log(objCopy,"objCopy")
+   ```
+
+   ![image-20221216212809752](C:\Users\玛的巴卡\AppData\Roaming\Typora\typora-user-images\image-20221216212809752.png)
+
+```javascript
+let obj = {}; 
+let obj2 = {name:'aaaaa'};
+obj.ttt1 = obj2;
+obj.ttt2 = obj2;
+let cp = JSON.parse(JSON.stringify(obj)); 
+obj.ttt1.name = 'change'; 
+cp.ttt1.name  = 'change';
+
+// 因为obj的 ttt1 和 ttt2都是指向一个同一个对象，所以修改其中一个，另一个也会变，也就是说obj.ttt1 === obj.ttt2
+console.log(obj); // { ttt1: {name: "change"}, ttt2: {name: "change"}}
+
+// 而通过这种方式拷贝时，obj2拷贝了两次，丢失了cp.ttt1 === cp.ttt2 的特征
+console.log(cp); // {ttt1: {name: "change"}, ttt2: {name: "aaaaa"}}
+```
+
+5. 不能正确处理`new Date()`
+6. 不能序列化函数
+7. 会忽略`symbol`
+
+#### 使用第三方库lodash中的cloneDeep()方法
+
+使用lodash.cloneDeep()的栗子：
+
+```javascript
+import lodash from 'lodash';
+
+let obj = {
+	a: {
+	    c: 2,
+	    d: [1, 3, 5],
+	    e:'阿巴阿巴'
+	  },
+	  b: 4
+}
+
+const newObj = lodash.cloneDeep(obj);
+
+obj.b = 20;
+console.log(newObj.b); //输出 4； 不会改变
+```
+
+cloneDeep()方法底层使用的本来就是递归，只不过是在外层有封装了一层。
+
 # 垃圾回收
 
 ## 什么是垃圾回收
@@ -2392,4 +2923,3 @@ b = null 	 	// 此对象的引用计数为 0（无引用）
 https://juejin.cn/post/6981588276356317214
 
 # 内存泄露
-
